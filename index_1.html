@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lemonade ECOM Ops — T6/2026</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" />
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8f7f5; color: #1a1a18; min-height: 100vh; }
+  #root { max-width: 960px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f1f0ec;
+    --bg-tertiary: #f8f7f5;
+    --text-primary: #1a1a18;
+    --text-secondary: #6b6b67;
+    --text-tertiary: #9a9a96;
+    --border: rgba(0,0,0,0.1);
+    --border-md: rgba(0,0,0,0.18);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --pink: #E84393;
+    --pink-light: #fff0f6;
+    --purple: #7C3AED;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: #1a1a18; color: #f0efe8; }
+    :root {
+      --bg-primary: #242422;
+      --bg-secondary: #2e2e2b;
+      --bg-tertiary: #1a1a18;
+      --text-primary: #f0efe8;
+      --text-secondary: #9a9a96;
+      --text-tertiary: #6b6b67;
+      --border: rgba(255,255,255,0.1);
+      --border-md: rgba(255,255,255,0.18);
+      --pink-light: #3a1428;
+    }
+  }
+  input[type=checkbox] { accent-color: var(--pink); cursor: pointer; }
+  select { background: var(--bg-primary); color: var(--text-primary); border: 0.5px solid var(--border-md); border-radius: var(--radius-md); padding: 5px 10px; font-size: 13px; cursor: pointer; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+const TODAY = new Date("2026-05-27");
+
+const CAMPAIGNS = [
+  { id:"double-day", name:"Double Day", sub:"Tiktok Birthday", platforms:["Tiktok"], start:"2026-06-01", end:"2026-06-06", size:"large", color:"#E84393" },
+  { id:"shopee-vhl-66", name:"Shopee VHL 6.6", sub:"Flash sale lớn", platforms:["Shopee"], start:"2026-06-06", end:"2026-06-06", size:"large", color:"#FF5722" },
+  { id:"camp-tiktok-mini", name:"Camp Tiktok Mini", sub:"Song song 6.6", platforms:["Tiktok"], start:"2026-06-07", end:"2026-06-07", size:"mini", color:"#374151" },
+  { id:"camp-shopee-mini", name:"Camp Shopee Mini", sub:"Riêng VHL lớn", platforms:["Shopee"], start:"2026-06-07", end:"2026-06-07", size:"mini", color:"#FF5722" },
+  { id:"shopee-hb-beauty", name:"Shopee HB Beauty", sub:"", platforms:["Shopee"], start:"2026-06-09", end:"2026-06-09", size:"medium", color:"#FF5722" },
+  { id:"shopee-member-10", name:"Shopee Member Day", sub:"10/6", platforms:["Shopee"], start:"2026-06-10", end:"2026-06-10", size:"medium", color:"#FF5722" },
+  { id:"tiktok-essentials", name:"Tiktok Essentials", sub:"10/6", platforms:["Tiktok"], start:"2026-06-10", end:"2026-06-10", size:"medium", color:"#374151" },
+  { id:"mid-month", name:"Mid Month", sub:"14-16/6 — Camp Lớn", platforms:["Shopee","Tiktok"], start:"2026-06-14", end:"2026-06-16", size:"large", color:"#7C3AED" },
+  { id:"tiktok-superbrand", name:"Tiktok Superbrand Festival", sub:"Lớn", platforms:["Tiktok"], start:"2026-06-16", end:"2026-06-16", size:"large", color:"#374151" },
+  { id:"shopee-member-20", name:"Shopee Member Day", sub:"20/6", platforms:["Shopee"], start:"2026-06-20", end:"2026-06-20", size:"medium", color:"#FF5722" },
+  { id:"birthday", name:"Quách Ánh's Birthday", sub:"22-28/6 — Camp Lớn", platforms:["Shopee","Tiktok"], start:"2026-06-22", end:"2026-06-28", size:"large", color:"#E84393" },
+  { id:"tiktok-freeship", name:"Tiktok Freeship Day", sub:"29/6", platforms:["Tiktok"], start:"2026-06-29", end:"2026-06-29", size:"medium", color:"#374151" },
+  { id:"mall-day", name:"Mall Day", sub:"29/6", platforms:["Shopee"], start:"2026-06-29", end:"2026-06-29", size:"medium", color:"#FF5722" },
+];
+
+const TASK_DEFS = [
+  { type:"check-stock", label:"Check Stock + Order AVT", icon:"ti-package", daysBeforeStart:7, priority:"high", detail:"Kiểm tra tồn kho Shopee & Tiktok · Brief design AVT · Confirm sản phẩm featured" },
+  { type:"setup-discount", label:"Cài Giảm Giá", icon:"ti-discount-2", daysBeforeStart:3, priority:"critical", detail:"Cài discount theo bảng giá CTKM · Nếu >50% CK → tạo voucher shop thay thế" },
+  { type:"setup-gifts", label:"Cài Tặng Quà", icon:"ti-gift", daysBeforeStart:3, priority:"critical", detail:"Cài gift đúng camp · Check stock quà trước khi cài" },
+  { type:"setup-voucher", label:"Cài Voucher Shop", icon:"ti-ticket", daysBeforeStart:3, priority:"critical", detail:"Tạo voucher shop · Set điều kiện · Test thử trước khi publish" },
+  { type:"change-banner", label:"Thay Banner + AVT", icon:"ti-photo", daysBeforeStart:1, priority:"critical", detail:"Upload banner mới · Check hiển thị mobile + desktop · Thay AVT sản phẩm theo camp" },
+  { type:"final-check", label:"Final Check — LIVE", icon:"ti-check-circle", daysBeforeStart:0, priority:"critical", detail:"Check toàn bộ live: giá · quà tặng · voucher · banner · AVT" },
+];
+
+const GIFTS = {
+  bau:[{p:"Dual Eyebrow",g1:"Eyelash Curler",g2:""},{p:"Aesthetic V2",g1:"Eyeshadow Brush",g2:""},{p:"Aesthetic Multi-task",g1:"Eyeshadow Brush",g2:""},{p:"Cushion (SPM/MA)",g1:"Cushion Puff",g2:""}],
+  double_day:[{p:"Dual Eyebrow",g1:"Mirror Water Tint",g2:""},{p:"Aesthetic V2",g1:"PC Blush",g2:""},{p:"Aesthetic Multi-task",g1:"Eyelash Curler",g2:""}],
+  mid_month:[{p:"Dual Eyebrow",g1:"Perfect Couple Lip",g2:""},{p:"Aesthetic V2",g1:"Eyelash Curler",g2:""},{p:"Aesthetic Multi-task",g1:"Eyelash Curler",g2:""}],
+  birthday:[{p:"Dual Eyebrow",g1:"Remover",g2:""},{p:"Aesthetic V2",g1:"Remover",g2:"Eyeshadow Brush"}],
+  camp_phu:[{p:"Dual Eyebrow (Shopee)",g1:"Perfect Couple Lip",g2:""},{p:"Dual Eyebrow (Tiktok)",g1:"Perfect Couple Lip",g2:""},{p:"Aesthetic V2 (Shopee)",g1:"Mirror Water Tint",g2:""},{p:"Aesthetic V2 (Tiktok)",g1:"PC Blush",g2:""}],
+};
+
+const KEY_PRODUCTS = [
+  {barcode:"6975425385077",name:"Aesthetic Eyeshadow Palette V2",price:489000,stock:3996,vhl:399000},
+  {barcode:"6975425385039",name:"Multi-task Palette - Early Fall",price:369000,stock:2260,vhl:309000},
+  {barcode:"6975425385015",name:"Multi-task Palette - Full-on",price:399000,stock:null,vhl:320000},
+  {barcode:"8994456650747",name:"Mirror Mirror Blush Cushion - 01",price:299000,stock:2481,vhl:230000},
+  {barcode:"4711378880526",name:"Matte Addict Concealer B00",price:199000,stock:5079,vhl:129000},
+  {barcode:"8859762800173",name:"Dual Eyebrow - 01. Dark Brown",price:209000,stock:9817,vhl:null},
+  {barcode:"8994456650914",name:"Micro Eyebrow - 01. Natural Brown",price:149000,stock:6641,vhl:null},
+  {barcode:"8881300625009",name:"Eyelash Curler",price:99000,stock:19604,vhl:null},
+];
+
+const parseDate = s => new Date(s + "T00:00:00");
+const diffDays = (a,b) => Math.round((b-a)/86400000);
+const fmtMoney = v => v ? `${Math.round(v/1000)}k` : "—";
+const fmtDate = d => { const D=["CN","T2","T3","T4","T5","T6","T7"]; return `${D[d.getDay()]} ${d.getDate()}/${d.getMonth()+1}`; };
+
+const PRIORITY_STYLE = {
+  critical:{bg:"#fff0f3",text:"#c0122c",border:"#f5c2cb",label:"CRITICAL"},
+  high:{bg:"#fff7ed",text:"#b45309",border:"#fde68a",label:"HIGH"},
+  medium:{bg:"#f0f9ff",text:"#0369a1",border:"#bae6fd",label:"MED"},
+  low:{bg:"#f0fdf4",text:"#166534",border:"#bbf7d0",label:"LOW"},
+};
+
+function generateTasks() {
+  const tasks = [];
+  CAMPAIGNS.forEach(camp => {
+    const campStart = parseDate(camp.start);
+    TASK_DEFS.forEach(td => {
+      const due = new Date(campStart);
+      due.setDate(due.getDate() - td.daysBeforeStart);
+      const daysUntil = diffDays(TODAY, due);
+      tasks.push({
+        id:`${camp.id}::${td.type}`, campId:camp.id, campName:camp.name,
+        campSub:camp.sub, campColor:camp.color, campSize:camp.size,
+        platforms:camp.platforms, type:td.type, label:td.label,
+        icon:td.icon, priority:td.priority, detail:td.detail,
+        dueDate:due, daysUntil, overdue:daysUntil<0, dueToday:daysUntil===0,
+      });
+    });
+  });
+  tasks.sort((a,b)=>a.dueDate-b.dueDate);
+  return tasks;
+}
+
+const ALL_TASKS = generateTasks();
+const STORAGE_KEY = "lemonade-ops-done-v1";
+
+function App() {
+  const [done, setDone] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)||"{}"); } catch { return {}; }
+  });
+  const [view, setView] = useState("dashboard");
+  const [filterPlatform, setFilterPlatform] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("pending");
+  const [selectedCamp, setSelectedCamp] = useState(null);
+
+  const toggleDone = useCallback(id => {
+    setDone(prev => {
+      const next = {...prev, [id]: !prev[id]};
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+
+  const overdueCount = ALL_TASKS.filter(t=>t.overdue&&!done[t.id]).length;
+  const todayPendingCount = ALL_TASKS.filter(t=>t.dueToday&&!done[t.id]).length;
+  const allPendingCount = ALL_TASKS.filter(t=>!done[t.id]).length;
+  const doneCount = ALL_TASKS.filter(t=>done[t.id]).length;
+
+  const visibleTasks = ALL_TASKS.filter(t => {
+    if (filterPlatform !== "all" && !t.platforms.includes(filterPlatform)) return false;
+    if (filterStatus === "pending" && done[t.id]) return false;
+    if (filterStatus === "done" && !done[t.id]) return false;
+    return true;
+  });
+
+  const campTasks = selectedCamp ? ALL_TASKS.filter(t=>t.campId===selectedCamp) : [];
+  const camp = CAMPAIGNS.find(c=>c.id===selectedCamp);
+
+  const TaskCard = ({t}) => {
+    const pc = PRIORITY_STYLE[t.priority];
+    const isDone = !!done[t.id];
+    const dueLabel = isDone ? "✓ Xong" : t.overdue ? `Quá hạn ${Math.abs(t.daysUntil)}N` : t.dueToday ? "Hôm nay" : `T-${t.daysUntil} · ${fmtDate(t.dueDate)}`;
+    const cardBg = !isDone && t.overdue ? "#fff5f5" : !isDone && t.dueToday ? "#fffbeb" : "var(--bg-primary)";
+    const cardBorder = !isDone && t.overdue ? "#fca5a5" : !isDone && t.dueToday ? "#fde68a" : "var(--border)";
+    const dueBg = isDone ? "#f0fdf4" : t.overdue&&!isDone ? "#fee2e2" : t.dueToday&&!isDone ? "#fef9c3" : "var(--bg-secondary)";
+    const dueColor = isDone ? "#166534" : t.overdue&&!isDone ? "#b91c1c" : t.dueToday&&!isDone ? "#92400e" : "var(--text-secondary)";
+    return (
+      <div style={{background:cardBg,border:`0.5px solid ${cardBorder}`,borderRadius:"var(--radius-lg)",padding:"10px 14px",marginBottom:6,opacity:isDone?0.55:1}}>
+        <div style={{display:"flex",alignItems:"flex-start",gap:10}}>
+          <input type="checkbox" style={{marginTop:2,flexShrink:0,width:16,height:16}} checked={isDone} onChange={()=>toggleDone(t.id)} />
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:14,fontWeight:500,color:"var(--text-primary)",textDecoration:isDone?"line-through":"none",marginBottom:4}}>
+              <i className={`ti ${t.icon}`} style={{marginRight:6,fontSize:14,color:isDone?"var(--text-tertiary)":"inherit"}}></i>
+              {t.label}
+            </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:5,alignItems:"center"}}>
+              <span style={{fontSize:11,fontWeight:500,padding:"1px 7px",borderRadius:4,background:pc.bg,color:pc.text,border:`0.5px solid ${pc.border}`}}>{pc.label}</span>
+              <span style={{fontSize:11,padding:"1px 7px",borderRadius:4,background:dueBg,color:dueColor,fontWeight:t.overdue||t.dueToday?500:400}}>{dueLabel}</span>
+              <span style={{fontSize:11,padding:"1px 6px",borderRadius:4,background:t.campColor+"18",color:t.campColor,border:`0.5px solid ${t.campColor}44`}}>{t.campName}{t.campSub?` · ${t.campSub}`:""}</span>
+              {t.platforms.map(p=>(
+                <span key={p} style={{fontSize:11,padding:"1px 6px",borderRadius:4,background:p==="Shopee"?"#fff3ee":"#f1f5fe",color:p==="Shopee"?"#c2410c":"#3730a3",border:`0.5px solid ${p==="Shopee"?"#ffd0bc":"#c7d2fe"}`}}>{p}</span>
+              ))}
+            </div>
+            {!isDone&&t.detail&&<div style={{fontSize:12,color:"var(--text-secondary)",marginTop:5,lineHeight:1.5}}>{t.detail}</div>}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const Section = ({title,icon,iconColor,tasks}) => tasks.length===0 ? null : (
+    <div style={{marginBottom:"1.5rem"}}>
+      <div style={{fontSize:11,fontWeight:600,color:"var(--text-secondary)",textTransform:"uppercase",letterSpacing:1,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+        {icon&&<i className={`ti ${icon}`} style={{fontSize:14,color:iconColor}}></i>}{title}
+      </div>
+      {tasks.map(t=><TaskCard key={t.id} t={t}/>)}
+    </div>
+  );
+
+  const GiftTable = ({title,rows}) => (
+    <div style={{background:"var(--bg-primary)",border:"0.5px solid var(--border)",borderRadius:"var(--radius-lg)",padding:"1rem",marginBottom:8}}>
+      <div style={{fontSize:13,fontWeight:600,color:"var(--text-primary)",marginBottom:8}}>{title}</div>
+      {rows.map((r,i)=>(
+        <div key={i} style={{display:"flex",gap:8,fontSize:12,padding:"5px 0",borderBottom:i<rows.length-1?"0.5px solid var(--border)":"none",alignItems:"center",flexWrap:"wrap"}}>
+          <span style={{color:"var(--text-secondary)",minWidth:170}}>{r.p}</span>
+          <span style={{color:"var(--text-primary)"}}><i className="ti ti-arrow-right" style={{fontSize:11,marginRight:4}}></i>{r.g1}</span>
+          {r.g2&&<span style={{color:"var(--text-secondary)"}}>+ {r.g2}</span>}
+        </div>
+      ))}
+    </div>
+  );
+
+  const InfoBox = ({bg,border,iconColor,icon,children}) => (
+    <div style={{background:bg,border:`0.5px solid ${border}`,borderRadius:"var(--radius-md)",padding:"10px 14px",marginBottom:12,fontSize:13,lineHeight:1.6}}>
+      <i className={`ti ${icon}`} style={{color:iconColor,marginRight:6}}></i>{children}
+    </div>
+  );
+
+  const NavBtn = ({v,ic,lbl}) => (
+    <button onClick={()=>{setView(v);setSelectedCamp(null);}} style={{padding:"7px 14px",borderRadius:"var(--radius-md)",border:view===v?"1.5px solid var(--pink)":"0.5px solid var(--border)",background:view===v?"var(--pink-light)":"transparent",color:view===v?"var(--pink)":"var(--text-secondary)",fontSize:13,fontWeight:view===v?600:400,cursor:"pointer",display:"flex",alignItems:"center",gap:5}}>
+      <i className={`ti ${ic}`} style={{fontSize:13}}></i>{lbl}
+    </button>
+  );
+
+  const StatCard = ({num,label,color,icon}) => (
+    <div style={{background:"var(--bg-primary)",borderRadius:"var(--radius-md)",padding:"12px 16px",borderLeft:`3px solid ${color}`,border:`0.5px solid var(--border)`,borderLeft:`3px solid ${color}`}}>
+      <div style={{fontSize:26,fontWeight:600,color,lineHeight:1}}>{num}</div>
+      <div style={{fontSize:12,color:"var(--text-secondary)",marginTop:5,display:"flex",alignItems:"center",gap:4}}>
+        <i className={`ti ${icon}`} style={{fontSize:12}}></i>{label}
+      </div>
+    </div>
+  );
+
+  const campGiftSection = (id) => {
+    if (["double-day"].includes(id)) return <GiftTable title="Quà tặng — Double Day" rows={GIFTS.double_day}/>;
+    if (["mid-month","tiktok-superbrand"].includes(id)) return <GiftTable title="Quà tặng — Mid Month" rows={GIFTS.mid_month}/>;
+    if (id==="birthday") return <GiftTable title="Quà tặng — Birthday" rows={GIFTS.birthday}/>;
+    if (["camp-shopee-mini","camp-tiktok-mini","shopee-hb-beauty","shopee-member-10","tiktok-essentials","shopee-member-20","tiktok-freeship","mall-day"].includes(id)) return <GiftTable title="Quà tặng — Camp phụ" rows={GIFTS.camp_phu}/>;
+    return <GiftTable title="Quà tặng — BAU" rows={GIFTS.bau}/>;
+  };
+
+  return (
+    <div>
+      <h2 className="sr-only">Lemonade ECOM Ops Dashboard Tháng 6/2026</h2>
+      {/* Header */}
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16,paddingBottom:16,borderBottom:"0.5px solid var(--border)"}}>
+        <div style={{width:38,height:38,borderRadius:10,background:"var(--pink)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+          <span style={{color:"#fff",fontWeight:700,fontSize:18}}>L</span>
+        </div>
+        <div>
+          <div style={{fontSize:17,fontWeight:600,color:"var(--text-primary)"}}>Lemonade ECOM Ops</div>
+          <div style={{fontSize:12,color:"var(--text-secondary)"}}>CTKM Tháng 6 · 2026</div>
+        </div>
+        <div style={{marginLeft:"auto",fontSize:12,color:"var(--text-secondary)",display:"flex",alignItems:"center",gap:5}}>
+          <i className="ti ti-calendar" style={{fontSize:14}}></i>T4 27/05/2026
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:10,marginBottom:20}}>
+        <StatCard num={overdueCount} label="Quá hạn" color="#c0122c" icon="ti-alert-circle"/>
+        <StatCard num={todayPendingCount} label="Hôm nay" color="#E84393" icon="ti-clock"/>
+        <StatCard num={allPendingCount} label="Còn lại" color="#7C3AED" icon="ti-list-check"/>
+        <StatCard num={doneCount} label="Xong" color="#16a34a" icon="ti-check"/>
+        <StatCard num={CAMPAIGNS.length} label="Campaigns" color="#0369a1" icon="ti-speakerphone"/>
+      </div>
+
+      {/* Nav */}
+      <div style={{display:"flex",gap:6,marginBottom:20,flexWrap:"wrap"}}>
+        <NavBtn v="dashboard" ic="ti-layout-dashboard" lbl="Dashboard"/>
+        <NavBtn v="timeline" ic="ti-calendar-event" lbl="Timeline"/>
+        <NavBtn v="campaigns" ic="ti-speakerphone" lbl="Campaigns"/>
+        <NavBtn v="avt" ic="ti-palette" lbl="AVT Order"/>
+        <NavBtn v="gifts" ic="ti-gift" lbl="Quà tặng"/>
+      </div>
+
+      {/* DASHBOARD */}
+      {view==="dashboard"&&(
+        <>
+          {overdueCount>0&&<InfoBox bg="#fff5f5" border="#fca5a5" icon="ti-alert-triangle" iconColor="#b91c1c">
+            <strong style={{color:"#b91c1c"}}>{overdueCount} task quá hạn</strong> — Cần xử lý ngay trước khi camp bắt đầu!
+          </InfoBox>}
+          <Section title="Quá hạn — Xử lý ngay" icon="ti-alert-circle" iconColor="#b91c1c" tasks={ALL_TASKS.filter(t=>t.overdue&&!done[t.id])}/>
+          <Section title="Hôm nay — 27/05" icon="ti-clock" iconColor="#E84393" tasks={ALL_TASKS.filter(t=>t.dueToday)}/>
+          <Section title="Sắp tới — 5 ngày tới" icon="ti-calendar" iconColor="var(--text-secondary)" tasks={ALL_TASKS.filter(t=>t.daysUntil>0&&t.daysUntil<=5)}/>
+          {overdueCount===0&&todayPendingCount===0&&ALL_TASKS.filter(t=>t.daysUntil>0&&t.daysUntil<=5).length===0&&(
+            <InfoBox bg="#f0fdf4" border="#bbf7d0" icon="ti-check-circle" iconColor="#16a34a">
+              Không có task khẩn cấp hôm nay. Xem Timeline để kiểm tra toàn bộ lịch.
+            </InfoBox>
+          )}
+        </>
+      )}
+
+      {/* TIMELINE */}
+      {view==="timeline"&&(
+        <>
+          <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap",alignItems:"center"}}>
+            <span style={{fontSize:12,color:"var(--text-secondary)"}}>Lọc:</span>
+            <select value={filterPlatform} onChange={e=>setFilterPlatform(e.target.value)}>
+              <option value="all">Tất cả platform</option>
+              <option value="Shopee">Shopee</option>
+              <option value="Tiktok">Tiktok</option>
+            </select>
+            <select value={filterStatus} onChange={e=>setFilterStatus(e.target.value)}>
+              <option value="all">Tất cả</option>
+              <option value="pending">Chưa xong</option>
+              <option value="done">Đã xong</option>
+            </select>
+            <span style={{fontSize:12,color:"var(--text-secondary)",marginLeft:4}}>{visibleTasks.length} tasks</span>
+          </div>
+          {visibleTasks.map(t=><TaskCard key={t.id} t={t}/>)}
+          {visibleTasks.length===0&&<div style={{textAlign:"center",color:"var(--text-secondary)",padding:"2rem",fontSize:14}}>Không có task phù hợp</div>}
+        </>
+      )}
+
+      {/* CAMPAIGNS */}
+      {view==="campaigns"&&(
+        <div style={{display:"grid",gridTemplateColumns:selectedCamp?"220px 1fr":"1fr",gap:16}}>
+          <div>
+            {CAMPAIGNS.map(c=>{
+              const ct = ALL_TASKS.filter(t=>t.campId===c.id);
+              const cd = ct.filter(t=>done[t.id]).length;
+              const pct = Math.round((cd/ct.length)*100);
+              const isSelected = selectedCamp===c.id;
+              return (
+                <div key={c.id} onClick={()=>setSelectedCamp(isSelected?null:c.id)} style={{padding:"10px 14px",borderRadius:"var(--radius-md)",border:isSelected?"1.5px solid var(--pink)":"0.5px solid var(--border)",background:isSelected?"var(--pink-light)":"var(--bg-primary)",cursor:"pointer",marginBottom:6,transition:"all 0.15s"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <div style={{width:8,height:8,borderRadius:"50%",background:c.color,flexShrink:0}}/>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:13,fontWeight:500,color:"var(--text-primary)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.name}</div>
+                      <div style={{fontSize:11,color:"var(--text-secondary)"}}>{parseDate(c.start).getDate()}/{parseDate(c.start).getMonth()+1} · {c.sub||c.size}</div>
+                    </div>
+                    <span style={{fontSize:11,color:pct===100?"#16a34a":"var(--text-secondary)",flexShrink:0,fontWeight:pct===100?600:400}}>{pct}%</span>
+                  </div>
+                  <div style={{marginTop:6,height:3,background:"var(--bg-secondary)",borderRadius:2,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:`${pct}%`,background:pct===100?"#16a34a":c.color,transition:"width 0.3s"}}/>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {selectedCamp&&camp&&(
+            <div>
+              <div style={{background:"var(--bg-primary)",border:"0.5px solid var(--border)",borderRadius:"var(--radius-lg)",padding:"1.25rem",marginBottom:12}}>
+                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+                  <div style={{width:12,height:12,borderRadius:"50%",background:camp.color,flexShrink:0}}/>
+                  <div>
+                    <div style={{fontSize:16,fontWeight:600,color:"var(--text-primary)"}}>{camp.name}</div>
+                    <div style={{fontSize:12,color:"var(--text-secondary)"}}>{camp.sub} · {fmtDate(parseDate(camp.start))}{camp.start!==camp.end?` → ${fmtDate(parseDate(camp.end))}`:""}</div>
+                  </div>
+                  <div style={{marginLeft:"auto",display:"flex",gap:4"}}>
+                    {camp.platforms.map(p=><span key={p} style={{fontSize:11,padding:"2px 7px",borderRadius:4,background:p==="Shopee"?"#fff3ee":"#f1f5fe",color:p==="Shopee"?"#c2410c":"#3730a3",border:`0.5px solid ${p==="Shopee"?"#ffd0bc":"#c7d2fe"}`}}>{p}</span>)}
+                  </div>
+                </div>
+                <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:1,color:"var(--text-secondary)",marginBottom:8}}>Checklist</div>
+                {campTasks.map(t=><TaskCard key={t.id} t={t}/>)}
+              </div>
+              {campGiftSection(selectedCamp)}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* AVT ORDER */}
+      {view==="avt"&&(
+        <>
+          <InfoBox bg="#f0f9ff" border="#bae6fd" icon="ti-info-circle" iconColor="#0369a1">
+            <strong style={{color:"#0369a1"}}>Hướng dẫn order AVT</strong> — Gom theo barcode để tránh trùng ID. Brief design T-5 trước ngày camp. Tick done khi đã gửi brief xong.
+          </InfoBox>
+          <InfoBox bg="#fef9c3" border="#fde68a" icon="ti-star" iconColor="#92400e">
+            <strong style={{color:"#92400e"}}>Key push T6:</strong> Dual Eyebrow chì kẻ mày · Aesthetic V2 bảng mắt 16 ô · Combo SPM Cushion + Loose Powder 429k
+          </InfoBox>
+          <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:1,color:"var(--text-secondary)",marginBottom:10}}>Sản phẩm — Order AVT theo camp</div>
+          {KEY_PRODUCTS.map(p=>(
+            <div key={p.barcode} style={{background:"var(--bg-primary)",border:"0.5px solid var(--border)",borderRadius:"var(--radius-md)",padding:"10px 14px",marginBottom:6}}>
+              <div style={{fontSize:14,fontWeight:500,color:"var(--text-primary)",marginBottom:4}}>{p.name}</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:12}}>
+                <span style={{fontSize:12,color:"var(--text-secondary)"}}><i className="ti ti-barcode" style={{marginRight:4,fontSize:12}}></i>{p.barcode}</span>
+                <span style={{fontSize:12,color:"var(--text-secondary)"}}><i className="ti ti-tag" style={{marginRight:4,fontSize:12}}></i>Niêm yết: {fmtMoney(p.price)}</span>
+                {p.vhl&&<span style={{fontSize:12,color:"var(--pink)",fontWeight:500}}><i className="ti ti-fire" style={{marginRight:4,fontSize:12}}></i>VHL: {fmtMoney(p.vhl)}</span>}
+                {p.stock&&<span style={{fontSize:12,color:"var(--text-secondary)"}}><i className="ti ti-stack-2" style={{marginRight:4,fontSize:12}}></i>Tồn: {p.stock.toLocaleString()}</span>}
+              </div>
+            </div>
+          ))}
+          <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:1,color:"var(--text-secondary)",margin:"16px 0 10px"}}>AVT cần thay theo camp</div>
+          {[
+            {camp:"Double Day (1-6/6)",note:"Dual Eyebrow · Aesthetic V2 · Mirror Blush Cushion"},
+            {camp:"Shopee VHL 6.6",note:"Concealer B00 · Aesthetic V2 · Multi-task Palette"},
+            {camp:"Mid Month (14-16/6)",note:"Dual Eyebrow · Superbrand hero SKU"},
+            {camp:"Birthday (22-28/6)",note:"Gift sets · Key SKU theo brief QA"},
+          ].map((r,i)=>(
+            <div key={i} style={{display:"flex",gap:12,padding:"8px 14px",background:"var(--bg-primary)",border:"0.5px solid var(--border)",borderRadius:"var(--radius-md)",marginBottom:6}}>
+              <span style={{fontSize:13,fontWeight:500,color:"var(--text-primary)",flexShrink:0,minWidth:170}}>{r.camp}</span>
+              <span style={{fontSize:13,color:"var(--text-secondary)"}}>{r.note}</span>
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* GIFTS */}
+      {view==="gifts"&&(
+        <>
+          <InfoBox bg="#f0fdf4" border="#bbf7d0" icon="ti-check-circle" iconColor="#166534">
+            <strong style={{color:"#166534"}}>Quy tắc quà:</strong> Tặng date ngắn trước (2027) · Tặng màu tồn nhiều, bán chậm · Không dùng SP bán trong VHL làm quà
+          </InfoBox>
+          <InfoBox bg="#fff7ed" border="#fde68a" icon="ti-alert-circle" iconColor="#b45309">
+            <strong style={{color:"#b45309"}}>Màu cần giải phóng:</strong> Son kem: Touched / Carefree / Happiness · Son tint: Me time / Morning glow · Má PC: 09, 18, Mindful, Lucky (date 2027 — tuỳ kho)
+          </InfoBox>
+          <GiftTable title="BAU (ngoài camp)" rows={GIFTS.bau}/>
+          <GiftTable title="Double Day (1-6/6)" rows={GIFTS.double_day}/>
+          <GiftTable title="Mid Month / Camp Lớn (14-16/6)" rows={GIFTS.mid_month}/>
+          <GiftTable title="Quách Ánh's Birthday (22-28/6)" rows={GIFTS.birthday}/>
+          <GiftTable title="Camp phụ — Shopee & Tiktok" rows={GIFTS.camp_phu}/>
+        </>
+      )}
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App/>);
+</script>
+</body>
+</html>
